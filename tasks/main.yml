@@ -1,0 +1,59 @@
+---
+- name: Include Ubuntu16 OS-specific variables.
+  include_vars: "Ubuntu16.yml"
+  when: ansible_os_family == 'Debian' and ansible_distribution_release == 'xenial'
+
+- name: Ensure php-mysql exist
+  apt: name="{{ item }}" state=present update_cache=yes
+  with_items: "{{ __php_mysql_package }}"
+  notify: restart apache
+
+- name: Ensure web directory exist
+  file: 
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+
+- name: Copy file wordpress
+  copy: 
+    src: wordpress-4.7.4-vi.tar.gz
+    dest: /var/www/html/wordpress.tar.gz
+    owner: www-data
+    group: www-data
+
+- name: Extract wordpress
+  unarchive: 
+    src: /var/www/html/wordpress.tar.gz 
+    dest: /var/www/html/
+    copy: no
+    owner: www-data
+    group: www-data
+
+- name: Move wordpress file
+  shell: "mv /var/www/html/wordpress/* /var/www/html && chown -R www-data:www-data /var/www/html"
+
+- name: Create WordPress database
+  mysql_db:
+    login_password: "{{ wp_mysql_login_password}}"
+    login_user: "{{ wp_mysql_login_user }}"
+    name: "{{ wp_db_name }}" 
+    state: present
+
+- name: Create WordPress database user
+  mysql_user: 
+    login_password: "{{ wp_mysql_login_password}}"
+    login_user: "{{ wp_mysql_login_user }}"
+    name: "{{ wp_db_user }}" 
+    password: "{{ wp_db_password }}" 
+    priv: "{{ wp_db_name }}.*:ALL"
+    host: 'localhost'
+    state: present
+
+- name: Copy WordPress config file
+  template: 
+    src: wp-config.php.j2
+    dest: /var/www/html/wp-config.php
+    owner: www-data
+    group: www-data
+    force: no
