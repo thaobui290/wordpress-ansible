@@ -1,0 +1,7 @@
+---
+wp_mysql_login_user: root
+wp_mysql_login_password: root
+
+wp_db_name: dbtest
+wp_db_user: testuser
+wp_db_password: testpassword
